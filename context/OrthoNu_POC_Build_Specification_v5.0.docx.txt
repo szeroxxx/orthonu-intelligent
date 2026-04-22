@@ -1,0 +1,931 @@
+﻿OrthoNu Clinical Intelligence Platform
+Proof-of-Concept Build Specification
+Skeleton-First Architecture  —  Patient-Driven Workflow
+
+
+Prepared by: Ash Gobindram, Technical Advisor — DeAnda Capital
+Version 5.0  |  March 2026  |  CONFIDENTIAL
+________________
+
+
+1. Executive Context
+1.1 What This Document Is
+This is a complete build specification for a POC prototype of the OrthoNu Clinical Intelligence Platform. The data is fictional, backend services are simulated, but the UI and UX must look and feel professional and real. This document includes an exhaustive visual design system extracted from an approved reference implementation (the JSX component file) so the developer can match the existing look and feel exactly.
+1.2 What This Platform Does
+1. A patient arrives. The PMS has their procedures, each identified by a CDT code.
+2. The OrthoNu platform ingests the patient’s CDT codes (POC: pre-populated mock patients).
+3. The platform looks up each CDT code. A single code can map to MULTIPLE products.
+4. All matched product recommendations display: name, indication, price, Dentira CTA.
+5. The user triggers simulated procurement. Toast confirms.
+6. Analytics track protocols fired, revenue, orders.
+1.3 Skeleton-First Architecture
+FR-05 (Workflow Visualization) is the application’s state machine. Build it first. Every other feature plugs into its step transitions.
+1.4 Patient-Driven Flow
+Users do NOT manually type CDT codes. Pre-loaded patients carry procedures. User selects a patient, clicks a procedure, and the workflow triggers.
+1.5 Glossary
+
+
+Term
+	Definition
+	CDT Code
+	5-character dental procedure code (D + 4 digits). Example: D8030.
+	PMS
+	Practice Management System. POC simulates via pre-loaded patient records.
+	Dentira
+	Dental procurement network. All API calls MOCKED in POC.
+	Protocol
+	Mapping rule: CDT code + indication → OrthoNu product. One CDT can trigger MULTIPLE protocols.
+	ICD-10 Code
+	Diagnosis code displayed for clinical context (e.g., K07.6).
+	Many-to-Many
+	One CDT code → multiple products. One product → multiple CDT codes.
+	Workflow Step
+	One of 6 stages in the state machine.
+	State Machine
+	Application is always in exactly one step. Events cause transitions.
+	MonoTag
+	UI component: DM Mono, 11px, tealPale background, teal text, 4px radius, 3px 8px padding. Used for CDT codes, SKUs, and meta labels throughout the app.
+	PulseDot
+	UI component: 7px animated green dot (#4DEBA0) with scale pulse animation. Indicates live/active status.
+	ConfidenceBar
+	UI component: 4px height, #D8E8E8 track, #0B6E6E fill, DM Mono 11px percentage label.
+	________________
+
+
+2. Visual Design System (Match This Exactly)
+This section defines every visual property of the application. It is derived from the approved JSX reference file. The developer must reproduce these tokens, fonts, component styles, and animations precisely. Do NOT substitute your own colors, fonts, or spacing. If you are unsure, open the JSX file and compare.
+2.1 Design Tokens
+Store these in a single tokens file (e.g., /src/tokens.js). Import everywhere. Never hardcode hex values in component files.
+
+
+Token Name
+	Hex Value
+	Usage
+	navy
+	#0D2137
+	Header background, card headers, primary text, dark sections (Dentira panel)
+	navyMid
+	#1A3A52
+	Workflow strip background
+	teal
+	#0B6E6E
+	Primary accent: buttons, active states, confidence bars, logo square, sidebar active borders
+	tealLt
+	#0D8A8A
+	Button hover state, active workflow node borders
+	tealPale
+	#E8F5F5
+	Light backgrounds: sidebar hover, protocol item hover, MonoTag background, badge backgrounds
+	mint
+	#A8DCDC
+	Subtle accent text: header subtext, workflow step labels (completed), scrollbar accents
+	cream
+	#F7F4EF
+	Page background (body), card section backgrounds, table alternate row, search input background
+	white
+	#FFFFFF
+	Card backgrounds, table primary row, input backgrounds, active tab background
+	slate
+	#4A6275
+	Secondary text: labels, descriptions, DM Mono uppercase labels, placeholder text
+	border
+	#D8E8E8
+	All borders: cards, inputs, table cells, sidebar dividers, confidence bar tracks
+	green
+	#1A7A4A
+	Success text in analytics, positive trend indicators
+	greenPale
+	#E8F5EE
+	Success-state backgrounds
+	greenBr
+	#4DEBA0
+	PulseDot color, toast checkmark, “Protocol Active” badge dot, stock-OK indicator
+	red
+	#C0392B
+	Error states, validation errors
+	amber
+	#D4820A
+	Warning: low stock, “Orders Queued” KPI accent
+	
+
+2.2 Typography (Three-Font Stack)
+Load all three from Google Fonts. The font pairing is critical to the look and feel. Do NOT substitute Inter, Roboto, or system fonts.
+
+
+Font Family
+	Weight(s)
+	Usage
+	DM Serif Display
+	400 (regular), italic
+	Display headings: page titles (22px), section headings (18–20px), KPI large numbers (28–34px), protocol card diagnosis title (20px). Never used for body text.
+	DM Mono
+	300, 400, 500
+	All monospace elements: CDT codes, SKUs, prices, MonoTag labels, uppercase section labels (10px, letter-spacing 0.1–0.14em, text-transform uppercase), filter pills, confidence percentages, date range buttons. This font is the signature of the UI — it appears everywhere.
+	Instrument Sans
+	400, 500, 600
+	Body text (13–14px), button labels, input text, descriptions, sidebar protocol names, table cell text. This is the primary reading font.
+	
+
+Google Fonts import string (add to index.html or global CSS):
+@import url(’https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap’);
+
+
+2.3 Specialty Badge Colors
+Each dental specialty gets a distinct color-coded badge. Use these exact background/text combinations:
+
+
+Specialty
+	Badge BG
+	Badge Text
+	CSS Example
+	Orthodontics
+	#EDF4FF
+	#2563EB
+	background: #EDF4FF; color: #2563EB; font-size: 11px; padding: 3px 9px; border-radius: 4px;
+	Periodontics
+	#F0FDF4
+	#16A34A
+	Same pattern, green palette
+	Oral Medicine
+	#FEF2F2
+	#DC2626
+	Same pattern, red palette
+	Preventive
+	#F5F3FF
+	#7C3AED
+	Same pattern, purple palette
+	Endodontics
+	#FEF9C3
+	#A16207
+	Add this: yellow/amber palette (new for v4)
+	Oral Surgery
+	#FFF1F2
+	#BE123C
+	Add this: rose palette (new for v4)
+	Implant Dentistry
+	#F0FDFA
+	#0D9488
+	Add this: teal palette (new for v4)
+	General Dentistry
+	#F8FAFC
+	#475569
+	Add this: slate palette (new for v4)
+	________________
+
+
+2.4 Global Animations (CSS Keyframes)
+Define these in a global stylesheet injected once on mount. All animations are CSS-only. Do NOT use JavaScript animation libraries (Framer Motion, GSAP, etc.).
+
+
+Name
+	Keyframes
+	Where Used
+	pulse
+	0%,100% { opacity:1; transform:scale(1) } 50% { opacity:.4; transform:scale(.75) }
+	PulseDot component (live status indicators)
+	slideUp
+	from { transform:translateY(80px); opacity:0 } to { transform:translateY(0); opacity:1 }
+	Toast entrance (.toast-enter class)
+	fadeIn
+	from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:translateY(0) }
+	Card/metric entrance (.fade-in class)
+	shimmer
+	0% { background-position:-400px 0 } 100% { background-position:400px 0 }
+	Loading skeleton states
+	workflowPulse
+	0%,100% { box-shadow:0 0 0 0 rgba(11,110,110,.4) } 50% { box-shadow:0 0 0 8px rgba(11,110,110,0) }
+	Active workflow step node (.workflow-active)
+	
+
+2.5 Hover States (Global CSS Classes)
+* .protocol-item:hover — background: tealPale (#E8F5F5), border-color: tealLt (#0D8A8A).
+* .filter-tab:hover — background: teal (#0B6E6E), color: white, border-color: teal.
+* .trigger-btn:hover — background: tealLt (#0D8A8A), transform: translateY(-1px), box-shadow: 0 4px 16px rgba(11,110,110,.3).
+* .view-tab:hover:not(.active-tab) — background: tealPale, color: navy.
+* .mapping-row:hover — background: tealPale, cursor: pointer.
+* .sidebar-item:hover — background: tealPale, border-color: tealLt.
+2.6 Card Styling Pattern
+Every card in the application follows this exact pattern. Do NOT deviate:
+* Background: white (#FFFFFF). Border: 1px solid border (#D8E8E8). Border-radius: 12–16px.
+* Box-shadow: 0 2px 16px rgba(11,110,110,.07) for standard cards. 0 4px 32px rgba(11,110,110,.1) for the main protocol card.
+* Section labels inside cards: DM Mono, 10px, letter-spacing 0.14em, text-transform uppercase, color: slate (#4A6275).
+* Internal dividers: 1px solid border (#D8E8E8) or 1px solid rgba(255,255,255,.08) inside navy sections.
+2.7 Scrollbar Styling
+* ::-webkit-scrollbar { width: 4px; height: 4px; }
+* ::-webkit-scrollbar-track { background: transparent; }
+* ::-webkit-scrollbar-thumb { background: #D8E8E8; border-radius: 2px; }
+________________
+
+
+3. Optimized Build Order
+Phase 0 must complete before anything else.
+
+
+Phase
+	Priority
+	Feature Requirement
+	Build Dependency
+	Phase 0
+	MUST
+	FR-05: Workflow Visualization (Skeleton)
+	None — the state machine. Every feature plugs into a step.
+	Phase 1
+	MUST
+	FR-01: Patient Session Queue
+	Plugs into Step 1. Patients carry CDT codes.
+	Phase 1
+	MUST
+	FR-02: Protocol Mapping Engine
+	Powers Step 1 → 2 → 3. Returns product arrays.
+	Phase 1
+	MUST
+	FR-09: No-Match Fallback
+	Handles missing mappings. Resets to Step 1.
+	Phase 2
+	MUST
+	FR-03: Product Recommendation Display
+	Lights up Steps 3–4. Multi-product cards.
+	Phase 2
+	MUST
+	FR-04: Dentira Procurement Trigger
+	Lights up Steps 5–6.
+	Phase 3
+	MUST
+	FR-06: Protocol Library Sidebar
+	Alternative entry into Step 1.
+	Phase 3
+	MUST
+	FR-07: CDT Mapping Table View
+	Alternative browsing entry.
+	Phase 4
+	MUST
+	FR-08: Analytics Dashboard
+	Reads workflow event log.
+	________________
+
+
+4. Detailed Feature Specifications
+  ▶  PHASE 0 — THE SKELETON
+FR-05 — Workflow Visualization (Application Skeleton)   [Must Have — BUILD FIRST]
+4.1 The 6 Workflow Steps
+Each step uses a Lucide React icon rendered at 18px inside the workflow node. Import each icon from lucide-react by the name shown below.
+
+
+#
+	Label
+	Lucide Icon
+	Trigger Event
+	UI Consequence
+	Payload
+	1
+	DiagnosisEntered
+	Stethoscope
+	User selects patient + clicks a procedure
+	Patient banner updates. Procedure highlighted.
+	{ patientId, cdtCode }
+	2
+	CDT CodeMatched
+	CircleCheckBig
+	Mapping engine finds match(es)
+	CDT MonoTag turns green. Auto-cascades to Step 3.
+	{ cdtCode, matchCount }
+	3
+	ProtocolActivated
+	Zap
+	Automatic (300ms after Step 2)
+	Product cards begin rendering.
+	{ protocols: [...] }
+	4
+	ProductRecommended
+	Package
+	Cards finish rendering (useEffect)
+	All cards visible. CTAs enabled.
+	{ products, totalValue }
+	5
+	DentiraProcurement
+	ShoppingCart
+	User clicks CTA or Order Selected
+	Button shows spinner. Processing.
+	{ skus, timestamp }
+	6
+	OutcomeCaptured
+	ClipboardCheck
+	Mock API returns success
+	Toast appears. Counters increment.
+	{ orderId, revenue }
+	4.2 Visual Design of the Workflow Strip (Match the JSX Exactly)
+The strip uses the EXISTING WorkflowStrip component pattern from the reference JSX. Replicate it precisely:
+* Container: background: navyMid (#1A3A52). Padding: 16px 28px. Flex row, center-aligned, overflowX: auto. No gap between node groups.
+* Each node: flex column, center-aligned. Padding: 8px 14px. Border-radius: 10px. Min-width: 90px.
+* Inactive node: background: rgba(255,255,255,.05). Border: 1px solid rgba(255,255,255,.1). Label: DM Mono, 9.5px, uppercase, letter-spacing 0.05em, color: rgba(255,255,255,.35). white-space: pre-line.
+* Active/completed node: background: rgba(11,110,110,.35). Border: 1px solid tealLt (#0D8A8A). Label color: mint (#A8DCDC). Apply .workflow-active class for the pulsing box-shadow animation.
+* Icon: Lucide React component rendered at 18px. Import: Stethoscope, CircleCheckBig, Zap, Package, ShoppingCart, ClipboardCheck from lucide-react. Color inherits from the node state (rgba(255,255,255,.35) for inactive, mint for active/completed).
+* Connectors: arrow character “→” between nodes, color rgba(255,255,255,.2), font-size 14px, padding 0 4px.
+* Transition on all node properties: transition: all .4s.
+CRITICAL: The step labels use two lines separated by \n (e.g., “Diagnosis\nEntered”). The CSS white-space: pre-line makes the newline render. Do NOT flatten these to single-line labels.
+4.3 State Machine Rules
+1. Single active state. Always in one step (1–6). Default: Step 1.
+2. Forward-only: 1 → 2 → 3 → 4 → 5 → 6. Backward only via RESET.
+3. Automatic: Steps 2 → 3 (300ms) and 3 → 4 (500ms). User sees cascade.
+4. User-triggered: 1 → 2 (click procedure), 4 → 5 (click CTA), 5 → 6 (API returns).
+5. Reset: returns to Step 1. Triggered by next patient, new procedure, no-match, or tab switch.
+6. No-match branch: Step 1 stays active with orange node highlight.
+7. Event logging: every transition appends to stepHistory array.
+4.4 useWorkflow Hook API
+1. currentStep (number 1–6). advanceToStep(step, payload). resetWorkflow().
+2. setNoMatchState(cdtCode). noMatchActive (boolean). getStepStatus(step).
+3. stepHistory (array of { fromStep, toStep, timestamp, payload }).
+4.5 Debug Panel + Acceptance Criteria
+Build 8 temporary debug buttons (advance to each step, reset, no-match, log history). Dashed border, labeled “DEBUG — Remove before delivery.” Acceptance: all 6 steps animate, reset works, no-match shows orange, event log is correct, no console errors.
+________________
+
+
+  ▶  PHASE 1 — PATIENT DATA + MAPPING
+FR-01 — Patient Session Queue   [Must Have]
+How the Patient Queue Works
+* Each demo session begins with a queue of fictional patients drawn from a pool of 30. On each load of the POC, the system randomly selects 10 patients from the pool and displays them in the queue. This creates variety across demo sessions.
+* Each patient carries a name, DOB, patient ID, insurance, provider, and 1–3 scheduled procedures (CDT codes drawn from the real OrthoNu mapping schema).
+* The user’s interaction: (1) select a patient from the queue, (2) see that patient’s details and scheduled procedures, (3) click a procedure to trigger the workflow. This simulates how a real PMS integration feeds patient and procedure data to the platform.
+Visual Design: Patient Queue (Left Panel)
+* Panel: same position and width as the existing Sidebar component (320px). Background: white. Border-right: 1px solid border (#D8E8E8).
+* Header label: DM Mono, 10px, letter-spacing 0.14em, uppercase, color: slate. Text: “PATIENT QUEUE.”
+* Each patient card: padding 11px 12px, border-radius 10px, background cream (#F7F4EF). Margin-bottom 4px.
+* Active patient: border 1.5px solid teal, background tealPale (#E8F5F5), box-shadow: 0 2px 12px rgba(11,110,110,.1).
+* Patient name: Instrument Sans, 13px, font-weight 500, color navy.
+* Patient meta (age, insurance): DM Mono, 11px, color slate.
+* Procedure count badge: MonoTag style (DM Mono, 11px, tealPale bg, teal text).
+Visual Design: Procedure Selection (Detail Panel)
+* When patient selected, show detail above the queue or as expanded section.
+* Patient banner: full width of main panel, same styling as existing KPI metric cards (white bg, border, rounded 12px, padding 18px 20px, box-shadow).
+* Procedure cards: same styling as sidebar-item. CDT code in MonoTag. Description in Instrument Sans 13px. Specialty as colored badge (see Section 2.3).
+* Clickable: on click, run workflow. After processing, show green checkmark (greenBr #4DEBA0) + strike-through style.
+* Progress: DM Mono 11px text below patient name: “1 of 3 procedures completed.”
+Mock Patient Data
+* 30 patients in /data/mock-patients.json. On each page load, randomly select 10 using Fisher-Yates shuffle.
+* Each patient: id, name, dob, insurance, provider, procedures array (cdtCode, cdtDescription, specialty, icd10).
+* ALL CDT codes MUST be valid codes from the real OrthoNu mapping schema. Every procedure matches at least one product.
+* Distribute across all 7 specialties. Multiple patients should trigger many-to-many mappings (e.g., D8030 = 3 products).
+* See Section 5.3 for the complete 30-patient roster.
+FR-02 — Protocol Mapping Engine   [Must Have]
+Workflow Integration
+* Returns an ARRAY of matched protocols. D8030 returns 3 objects (Braces Starter, Comfort Tape, Aligner Starter).
+* Powers Step 1 → 2 → 3 cascade.
+Schema
+* /data/cdt-mapping-schema.json. All 80 rows from the OrthoNu Clinical Protocol Master Chart.
+* See Section 5.1 (Product Catalog) and 5.2 (Full Mapping Summary) for complete data.
+FR-09 — No-Match Fallback   [Must Have]
+Visual Design
+* Same card container as product recommendation (white bg, border, rounded 16px).
+* Inside: cream (#F7F4EF) background section. Icon: emoji or Lucide SearchX.
+* Heading: DM Serif Display, 18px, navy. “No Protocol Mapped.”
+* Body: Instrument Sans, 13px, slate. CDT code shown as MonoTag.
+* Button: same styling as filter-tab but larger. Secondary style (border only, not filled).
+________________
+
+
+  ▶  PHASE 2 — OUTPUT + PROCUREMENT
+FR-03 — Product Recommendation Display   [Must Have]
+Visual Design: Protocol Card (Match the JSX ProtocolEngine)
+* Outer card: white bg, border-radius 16px, border 1px solid border, box-shadow 0 4px 32px rgba(11,110,110,.1). Overflow hidden.
+* Card header: background navy (#0D2137), padding 20px 28px. Diagnosis title: DM Serif Display, 20px, white. CDT code: MonoTag with mint text on rgba(168,220,220,.15) background. “Protocol Active” badge: greenBr dot + DM Mono text in rgba(77,235,160,.12) bg, 1px solid rgba(77,235,160,.3) border, border-radius 20px.
+* Body: two-column grid (1fr 1fr), gap 20px, padding 24px 28px.
+* LEFT COLUMN — Recommended Therapy section: cream background, border-radius 12px, padding 18px, border 1px solid border. Section label: DM Mono uppercase. Product card inside: white bg, border-radius 10px, 2px solid teal border, box-shadow 0 2px 12px rgba(11,110,110,.1). Product icon: 44px square, tealPale bg, border-radius 10px. Product name: Instrument Sans 14px, 600 weight, navy. Description: 12px, slate. Price: DM Mono 13px, teal, 500 weight.
+* Below product card: key-value rows for Trigger Condition, Application, Follow-up Protocol, Reorder Threshold. Each row: flex justify-between, padding 8px 0, border-bottom 1px solid border. Key: 12px slate. Value: Instrument Sans, navy, 500 weight, right-aligned.
+* RIGHT COLUMN — Dentira Procurement panel: navy (#0D2137) background, border-radius 12px, padding 20px. Section label: DM Mono uppercase, mint color. Key-value rows: key rgba(255,255,255,.45), value white 500 weight. Dividers: 1px solid rgba(255,255,255,.08). SKU: DM Mono 12px. Stock: greenBr if healthy, red #EF4444 if low + “⚠ Low”. Confidence: greenBr, 600 weight, percentage.
+Multi-Product Selection Behavior
+* When multiple products match (e.g., D8030 = 3 products): render the card header once, then show multiple product sub-cards in the LEFT COLUMN (stacked vertically). Each product gets its own CTA in the RIGHT COLUMN.
+* EACH product card includes a CHECKBOX (top-right corner). All checkboxes are checked by default on first render. The user can uncheck any product they do not want to order.
+* Three CTA states based on selection: (a) All products checked: show “Order All Products” master CTA. (b) Some products checked (subset): show “Order Selected (N)” CTA where N is the count of checked products. (c) No products checked: CTA is disabled, text reads “Select products to order.”
+* The summary line updates dynamically: “2 of 3 products selected | Total value: $214.98” (recalculates as checkboxes change).
+* Individual product cards can also have their own small “Order” button (secondary style, not primary CTA) for ordering a single product without affecting the others.
+* Checkbox styling: 16px, teal border, teal fill when checked, white checkmark. Use a custom styled checkbox, not the browser default.
+CTA Button (Trigger Dentira Order)
+* Width: 100%. Padding: 13px. Margin-top: 16px. Background: teal (#0B6E6E). Border: none. Border-radius: 8px. Color: white.
+* Font: Instrument Sans, 13px, 600 weight, letter-spacing 0.02em.
+* Text: “⚡ Trigger Dentira Order” (with lightning emoji).
+* Hover (.trigger-btn:hover): background tealLt, translateY(-1px), box-shadow 0 4px 16px rgba(11,110,110,.3).
+* Loading state: background slate (#4A6275), cursor wait, text “⏳ Sending to Dentira...”, disabled.
+FR-04 — Dentira Procurement Trigger   [Must Have]
+Toast Notification (Match the JSX Toast)
+* Position: fixed, bottom 32px, right 32px. Z-index: 999.
+* Background: navy (#0D2137). Color: white. Padding: 14px 20px. Border-radius: 12px.
+* Border-left: 3px solid teal (#0B6E6E). Box-shadow: 0 8px 40px rgba(13,33,55,.25).
+* Font: Instrument Sans, 13px. Flex row, center-aligned, gap 10px.
+* Checkmark: greenBr (#4DEBA0) “✓” character, 16px.
+* Message: “Dentira order triggered — [Product Name] ([SKU])”.
+* Entrance: .toast-enter class triggers slideUp animation (translateY 80px to 0, 0.35s cubic-bezier(.34,1.56,.64,1)).
+* Auto-dismiss after 3.2 seconds. Fade out: opacity transition 0.2s.
+Mock API
+* /services/dentiraService.js. Simulated 900ms delay (matching JSX). Returns { success, orderId, items, revenue, timestamp }.
+* Console log: [Dentira Mock API] Request/Response.
+________________
+
+
+  ▶  PHASE 3 — NAVIGATION + DISCOVERY
+FR-06 — Protocol Library Sidebar   [Must Have]
+Visual Design (Match the JSX Sidebar Exactly)
+* Width: 320px. Background: white. Border-right: 1px solid border. Sticky, top 64px (below header). Height: calc(100vh - 64px).
+* Header section: padding 20px 18px 14px, border-bottom. Label: DM Mono, 10px, uppercase, 0.14em spacing, slate. Text: “PROTOCOL LIBRARY.”
+* Search input: width 100%, padding 9px 12px 9px 34px (left padding for search icon). Border: 1.5px solid border. Border-radius: 8px. Font: Instrument Sans, 13px, navy text. Background: cream. On focus: border-color transitions to teal.
+* Search icon: “⌕” character positioned absolute, left 11px, top 50%, transform translateY(-50%), color slate, 15px, pointer-events none.
+* Filter section: padding 12px 18px 10px, border-bottom. Flex row, gap 5px, flex-wrap. Pills: padding 4px 11px, border-radius 20px, font DM Mono 11px. Inactive: border 1.5px solid border, white bg, slate text. Active: border teal, bg teal, white text. Hover: .filter-tab:hover class.
+* Protocol list: overflow-y auto, padding 10px 12px, flex 1. Each item: padding 11px 12px, border-radius 10px, cursor pointer, margin-bottom 4px. Active item: border 1.5px solid teal, bg tealPale, box-shadow 0 2px 12px rgba(11,110,110,.1). Inactive: border transparent, bg cream.
+* Item contents: CDT code (DM Mono 11px, teal, 500 weight). Diagnosis (Instrument Sans 13px, 500, navy, line-height 1.3). Product (11px, slate, with emoji icon prefix).
+* Empty state: text-align center, padding 32px 16px, slate, 13px. “No protocols match your search.”
+* NOTE: In the Protocol Lookup tab, the Patient Queue replaces this sidebar. This sidebar appears when the user is browsing (or toggleable).
+FR-07 — CDT Mapping Table View   [Must Have]
+Visual Design (Match the JSX MappingTable Exactly)
+* Container: flex 1, padding 24px 28px, overflow auto.
+* Controls row: flex, justify-between, margin-bottom 18px. Left: filter pills (same as sidebar). Right: search input (padding 8px 14px, border 1.5px solid border, border-radius 8px, Instrument Sans 13px, width 200px) + sort links (DM Mono 11px, clickable, active: teal color + underline + 600 weight).
+* Table card: white bg, border-radius 16px, overflow hidden, border, box-shadow 0 2px 20px rgba(11,110,110,.07).
+* Table header bar: padding 16px 24px, border-bottom. Left: DM Serif Display 18px. Right: MonoTag showing count: “80 Active Mappings.”
+* Table head: bg cream. th: padding 10px 18px, DM Mono 10px, letter-spacing 0.12em, uppercase, slate, border-bottom.
+* Table rows: alternating white/cream. Padding 12px 18px. CDT code: DM Mono 12px, teal, 500 weight. Diagnosis: 13px, 500, navy. Specialty: colored badge (Section 2.3). Product: 13px, navy, with emoji prefix. Stock: DM Mono 12px, greenBr if healthy, red #EF4444 if low. Confidence: ConfidenceBar component.
+* Row hover: .mapping-row:hover = tealPale background.
+* Row click: navigates to Protocol Engine with that protocol loaded.
+* Columns: CDT Code, Description, Specialty, Indication, OrthoNu Product, Price, Confidence. NOTE: many CDT codes appear in MULTIPLE rows (one per product). D8030 has 3 rows.
+________________
+
+
+  ▶  PHASE 4 — ANALYTICS
+FR-08 — Analytics Dashboard   [Must Have]
+Visual Design (Match the JSX Analytics Pattern, Expanded)
+* Container: flex 1, padding 24px 28px, overflow auto.
+* Title row: flex justify-between. Left: DM Serif Display, 22px, “Platform Analytics.” Right: time frame selector (see below).
+Time Frame Selector (5 Options)
+* Pill-group selector: white bg, border-radius 10px, padding 4px, border 1px solid border. Each button: padding 6px 16px, border-radius 7px, no border, DM Mono 12px. Active: navy bg, white text. Inactive: transparent bg, slate text.
+* Options: Today | 7 Days | 30 Days | 90 Days | YTD. Default active: Today.
+* Switching the time frame reloads ALL dashboard data (KPI cards, all charts) from the seeded data for that range. Use /data/analytics-seed-data.json with nested objects keyed by range.
+KPI Cards (Top Row — Same Pattern as JSX)
+* Grid: 4 columns, gap 16px, margin-bottom 24px. .fade-in class.
+* Each card: white bg, border-radius 14px, padding 22px, border, box-shadow 0 2px 16px rgba(11,110,110,.07).
+* Label: DM Mono 10px uppercase, 0.1em spacing, slate. Value: DM Serif Display 34px, line-height 1. Sub-bar: height 3px, border track, colored fill.
+* Card 1: “Protocols Fired” — color teal. Card 2: “Products Attached” — color green. Card 3: “Revenue Generated” — color teal, format as $X,XXX. Card 4: “Dentira Orders Queued” — color amber.
+* Each card also shows a trend indicator below the value: DM Mono 11px, green “↑ 12%” or red “↓ 3%” with arrow. Trend compares current range to the previous equivalent range.
+* Live session data: when user triggers a Dentira order during the demo, “Dentira Orders Queued” increments by 1 and “Revenue Generated” adds the order value in real time.
+Chart Row 1: Protocol Activity (Full Width)
+* Full-width chart card (spans both columns). Title: “Protocol Activity by CDT Code.”
+* Show ALL protocols that have been fired (not just top 5). In the seeded data, include at least 15–20 CDT codes with varying counts.
+* Horizontal bar chart. Each row: MonoTag with CDT code + description text + count + bar. Bars colored from the specialty badge palette (Ortho rows = blue, Perio = green, etc.).
+* Sortable: default sort by count (highest first). Click “Sort by specialty” to group by specialty. Click “Sort by CDT” for alphabetical.
+* Scrollable if list exceeds viewport height (max-height with overflow-y auto).
+Chart Row 2: Two Charts Side by Side
+* Grid: 2 columns, gap 20px.
+* LEFT: “Revenue by Product” — ALL 7 OrthoNu products (Braces Starter Collection, Aligner Starter Collection, Comfort Tape, Chillin Strips, Oral Relief Kit, Mouth-Aid, OrthoChewz). Horizontal bar chart. Each row: product name + revenue amount (DM Mono, navy, 600) + bar. Bar colored using token palette: teal, tealLt, mint, green, slate, amber, navy (one per product). Revenue values change per time frame.
+* RIGHT: “Revenue by Specialty” — all 7 specialties as horizontal bars. Colored using the specialty badge palette from Section 2.3. Shows aggregate revenue per specialty for the selected time frame.
+Chart Row 3: Trend Over Time (Full Width)
+* Full-width chart card. Title: “Protocol Volume Trend.”
+* Simple line or area chart showing protocols fired per day/week over the selected time frame. For “Today” show hourly (8am–10pm). For “7 Days” show daily. For “30 Days” show daily. For “90 Days” and “YTD” show weekly.
+* Implementation: use the custom div-based bar approach from the JSX for simpler time frames, or Recharts’ AreaChart for the line chart. Either is acceptable.
+* Seed this data in /data/analytics-seed-data.json with realistic daily/weekly volume numbers.
+Seeded Data Structure (/data/analytics-seed-data.json)
+* Top-level keys: today, 7d, 30d, 90d, ytd. Each contains: { kpis: { fired, attached, revenue, queued, trends: { fired, attached, revenue, queued } }, protocols: [{ cdt, label, specialty, count, pct }], revenueByProduct: [{ product, revenue, pct }], revenueBySpecialty: [{ specialty, revenue, pct }], volumeTrend: [{ period, value }] }.
+* Seed with realistic numbers that scale logically: Today (47 fired, $912) → 7 Days (284 fired, $5,640) → 30 Days (1,102 fired, $21,840) → 90 Days (3,100 fired, $62,000) → YTD (8,400 fired, $168,000).
+* Ensure all 7 products appear in revenueByProduct for every time frame. Ensure all 7 specialties appear in revenueBySpecialty.
+________________
+
+
+5. Mock Data Specification
+5.1 OrthoNu Product Catalog (Real Products)
+Product Name
+	Price
+	SKU
+	Specialties
+	Braces Starter Collection
+	$189.99
+	SKU-ON-1001
+	Orthodontics
+	Aligner Starter Collection
+	$189.99
+	SKU-ON-1002
+	Orthodontics
+	Comfort Tape
+	$24.99
+	SKU-ON-1003
+	Orthodontics, General Dentistry
+	Chillin Strips
+	$24.99
+	SKU-ON-1004
+	Periodontics, Endodontics, Oral Surgery, Implant Dentistry
+	Oral Relief Kit
+	$98.99
+	SKU-ON-1005
+	General Dentistry
+	Mouth-Aid
+	$24.99
+	SKU-ON-1006
+	Oral Medicine
+	OrthoChewz
+	$24.99
+	SKU-ON-1007
+	Oral Medicine
+	
+
+5.2 Mapping Summary (80 rows, 46 CDT codes, 7 specialties)
+Orthodontics: 13 CDT codes × 3 products = 39 rows
+D8010–D8090, D8660–D8680. Each maps to Braces Starter ($189.99) + Comfort Tape ($24.99) + Aligner Starter ($189.99). ICD-10: K07.6.
+Periodontics: 7 × 1 = 7 rows
+D4210, D4240, D4260, D4341, D4342, D4355, D4910 → Chillin Strips ($24.99). ICD-10: K05.30.
+Endodontics: 6 × 1 = 6 rows
+D3310, D3320, D3330, D3346, D3347, D3348 → Chillin Strips ($24.99). ICD-10: K04.01.
+Oral Surgery: 7 × 1 = 7 rows
+D7140, D7210–D7260 → Chillin Strips ($24.99). ICD-10: K08.89.
+Oral Medicine: 4 × 2 = 8 rows
+D0140, D0160, D0170, D0180 → Mouth-Aid ($24.99, K12.0) + OrthoChewz ($24.99, K11.7).
+Implant Dentistry: 4 × 1 = 4 rows
+D6010, D6040, D6056, D6065 → Chillin Strips ($24.99). ICD-10: K08.89.
+General Dentistry: 6 × 2 = 12 rows
+D0120, D0150, D1110, D2740, D2950, D9972 → Oral Relief Kit ($98.99, Z01.20) + Comfort Tape ($24.99, K03.81).
+________________
+
+
+5.3 Mock Patient Roster (30 Patients — Random 10 Per Session)
+Store all 30 patients in /data/mock-patients.json. On each page load, the application randomly selects 10 using a Fisher-Yates shuffle of the full array and taking the first 10. This creates a different patient lineup each demo session. ALL CDT codes below are valid and will match at least one product.
+
+
+Implementation: const shuffled = [...allPatients].sort(() => Math.random() - 0.5); const sessionPatients = shuffled.slice(0, 10);
+
+
+#
+	Name
+	Age
+	ID
+	Insurance
+	Procedures (CDT codes)
+	1
+	Sarah Chen
+	14
+	PID-10234
+	Delta PPO
+	D8030 (Ortho — 3 products), D8670 (Ortho — 3 products)
+	2
+	James Rodriguez
+	53
+	PID-10567
+	Cigna HMO
+	D4341 (Perio), D4910 (Perio)
+	3
+	Emily Thompson
+	28
+	PID-10891
+	Aetna PPO
+	D0120 (GenDent — 2 products), D1110 (GenDent — 2), D9972 (GenDent — 2)
+	4
+	Michael Washington
+	60
+	PID-11002
+	MetLife
+	D7210 (OralSurg), D7240 (OralSurg)
+	5
+	Olivia Park
+	15
+	PID-11345
+	Guardian
+	D8080 (Ortho — 3 products)
+	6
+	David Kim
+	45
+	PID-11567
+	Aetna HMO
+	D3330 (Endo), D3348 (Endo)
+	7
+	Maria Santos
+	37
+	PID-11789
+	Delta PPO
+	D0160 (OralMed — 2 products), D0180 (OralMed — 2)
+	8
+	Robert Chen
+	68
+	PID-12001
+	Medicare
+	D6010 (Implant), D6065 (Implant), D2740 (GenDent — 2)
+	9
+	Aisha Johnson
+	32
+	PID-12234
+	Cigna PPO
+	D2950 (GenDent — 2 products), D0150 (GenDent — 2)
+	10
+	Thomas Reeves
+	50
+	PID-12456
+	Guardian
+	D4260 (Perio), D7140 (OralSurg), D0150 (GenDent — 2)
+	11
+	Priya Kapoor
+	12
+	PID-12678
+	Aetna PPO
+	D8010 (Ortho — 3 products), D8660 (Ortho — 3)
+	12
+	Luis Morales
+	58
+	PID-12890
+	MetLife
+	D4355 (Perio), D4342 (Perio)
+	13
+	Hannah Whitfield
+	16
+	PID-13012
+	Delta PPO
+	D8040 (Ortho — 3 products)
+	14
+	Ahmed Hassan
+	47
+	PID-13234
+	Cigna HMO
+	D3310 (Endo), D3320 (Endo), D7250 (OralSurg)
+	15
+	Grace Okonkwo
+	39
+	PID-13456
+	Guardian
+	D0170 (OralMed — 2 products), D0140 (OralMed — 2)
+	16
+	Brian Castellano
+	62
+	PID-13678
+	Medicare
+	D6040 (Implant), D6056 (Implant)
+	17
+	Yuki Tanaka
+	11
+	PID-13890
+	Aetna HMO
+	D8050 (Ortho — 3 products), D8680 (Ortho — 3)
+	18
+	Fatima Al-Rashid
+	44
+	PID-14012
+	Delta PPO
+	D4210 (Perio), D4240 (Perio), D4341 (Perio)
+	19
+	Kevin O’Malley
+	55
+	PID-14234
+	Cigna PPO
+	D7220 (OralSurg), D7230 (OralSurg)
+	20
+	Diana Popov
+	36
+	PID-14456
+	MetLife
+	D1110 (GenDent — 2), D2740 (GenDent — 2)
+	21
+	Carlos Gutierrez
+	71
+	PID-14678
+	Medicare
+	D3346 (Endo), D7260 (OralSurg)
+	22
+	Lily Johansson
+	13
+	PID-14890
+	Guardian
+	D8060 (Ortho — 3 products)
+	23
+	Raj Patel
+	49
+	PID-15012
+	Aetna PPO
+	D0120 (GenDent — 2), D9972 (GenDent — 2), D0150 (GenDent — 2)
+	24
+	Samantha Brooks
+	15
+	PID-15234
+	Delta PPO
+	D8090 (Ortho — 3 products), D8670 (Ortho — 3)
+	25
+	Wei Zhang
+	65
+	PID-15456
+	Cigna HMO
+	D6010 (Implant), D6065 (Implant), D4910 (Perio)
+	26
+	Natalia Herrera
+	31
+	PID-15678
+	Guardian
+	D0180 (OralMed — 2 products)
+	27
+	Tomoko Ishikawa
+	42
+	PID-15890
+	MetLife
+	D3347 (Endo), D3330 (Endo)
+	28
+	Marcus Wright
+	57
+	PID-16012
+	Aetna HMO
+	D4260 (Perio), D4341 (Perio), D7210 (OralSurg)
+	29
+	Elena Kowalski
+	17
+	PID-16234
+	Cigna PPO
+	D8020 (Ortho — 3 products)
+	30
+	Jerome Baptiste
+	73
+	PID-16456
+	Medicare
+	D7140 (OralSurg), D2950 (GenDent — 2), D6040 (Implant)
+	
+
+Patient Design Notes:
+* 8 Orthodontic patients (Sarah 14, Olivia 15, Priya 12, Hannah 16, Yuki 11, Lily 13, Samantha 15, Elena 17) — ages skew pre-teen/teen (11–17) reflecting real ortho demographics. Each CDT triggers 3 products.
+* 6 General Dentistry patients (Emily, Aisha, Thomas, Diana, Raj, Jerome) — each CDT triggers 2 products.
+* 5 Periodontics patients (James, Luis, Fatima, Wei, Marcus) — Chillin Strips.
+* 4 Oral Surgery patients (Michael, Kevin, Carlos, Marcus) — Chillin Strips.
+* 3 Endodontics patients (David, Ahmed, Tomoko) — Chillin Strips.
+* 3 Oral Medicine patients (Maria, Grace, Natalia) — Mouth-Aid + OrthoChewz (2 products each).
+* 3 Implant patients (Robert, Brian, Wei) — Chillin Strips.
+* 5 multi-specialty patients (Thomas, Robert, Ahmed, Wei, Jerome, Marcus) span 2–3 specialties in one visit.
+________________
+
+
+6. UI Layout and Header
+6.1 Header Bar (Match the JSX Header Exactly)
+* Position: sticky, top 0, z-index 100. Height: 64px. Background: navy (#0D2137). Padding: 0 32px. Box-shadow: 0 2px 20px rgba(13,33,55,.4). Flex row, center-aligned, justify space-between.
+* LEFT GROUP: Logo square (34px, teal bg, border-radius 8px, DM Serif Display “O” in white 17px) + text group (“OrthoNu” in DM Serif Display 18px white + “CLINICAL PROTOCOL ENGINE” in DM Mono 10px, mint, uppercase, letter-spacing 0.12em).
+* CENTER: Tab switcher. Background: rgba(255,255,255,.06), border-radius 10px, padding 4px. Three buttons: “Protocol Engine”, “CDT Mapping Table”, “Analytics.” Each: padding 7px 18px, border-radius 7px, Instrument Sans 13px 500. Active: white bg, navy text. Inactive: transparent bg, rgba(255,255,255,.6) text.
+* RIGHT: Status pill. Background: rgba(168,220,220,.12), border: 1px solid rgba(168,220,220,.25), border-radius 20px, padding 5px 14px. DM Mono 11px, mint, letter-spacing 0.08em. PulseDot (6px, greenBr) + “API v1.0 — Demo.”
+6.2 Page Layout
+1. Header (sticky, full width, 64px height).
+2. Below header: flex row, height calc(100vh - 64px).
+3. LEFT: Sidebar (320px) — Patient Queue on Protocol tab, Protocol Library when browsing. Hidden on Analytics tab.
+4. RIGHT: Main panel (flex 1, overflow auto). Content depends on active tab.
+5. Protocol tab: KPI metrics row + workflow strip + protocol card.
+6. Mapping tab: filters + search + table.
+7. Analytics tab: range selector + KPI cards + chart row.
+6.3 KPI Metrics Row (Match the JSX ProtocolEngine Metrics)
+Displayed at top of Protocol Engine view. Grid: 4 columns, gap 14px, padding 20px 28px 0.
+* Each card: white bg, border-radius 12px, padding 18px 20px, border, box-shadow 0 2px 12px rgba(11,110,110,.06). .fade-in class on mount.
+* Label: DM Mono 10px, uppercase, 0.1em spacing, slate.
+* Value: DM Serif Display 28px, navy, line-height 1.
+* Sub-text: 11px, 500 weight, colored (green for positive, slate for neutral).
+* Cards: “Protocols Fired Today” (47), “Products Attached” (38), “Revenue Generated” ($912), “Dentira Orders Queued” (14).
+________________
+
+
+7. Technology Stack
+Layer
+	Technology
+	Notes
+	Frontend
+	React 18+ with Vite
+	Match the JSX reference pattern: functional components, hooks, inline styles.
+	Styling
+	Inline styles + global CSS injection
+	The JSX uses inline style objects + one injected <style> block. Follow this pattern. Tailwind is acceptable as supplement but NOT as replacement.
+	Fonts
+	Google Fonts: DM Serif Display, DM Mono, Instrument Sans
+	CRITICAL. Do not substitute. Import in index.html or global CSS.
+	State: Workflow
+	React Context (WorkflowContext)
+	useWorkflow hook. Central state machine.
+	State: Patient
+	React Context (PatientContext)
+	Tracks selected patient + procedure queue.
+	Icons
+	Emoji (primary) + Lucide React (secondary)
+	The JSX uses emoji for product icons. Continue this pattern.
+	Toasts
+	Custom Toast component (from JSX)
+	Do NOT add react-hot-toast. Use the existing Toast pattern.
+	Charts
+	Custom bar components (from JSX pattern)
+	The Analytics view uses simple div-based bars, NOT Recharts. Follow this pattern. Recharts optional for extended features.
+	Mock Data
+	Local JSON in /data
+	No backend.
+	Language
+	JavaScript (ES6+) or TypeScript
+	The JSX reference is plain JS. Either is fine.
+	________________
+
+
+8. Acceptance Checklist
+
+
+#
+	Phase
+	Item
+	Pass?
+	1
+	0
+	Workflow strip: 6 Lucide icon nodes (Stethoscope thru ClipboardCheck), navyMid bg, workflowPulse on active.
+	
+
+	2
+	0
+	Debug panel: all transitions animate. Reset and no-match work.
+	
+
+	3
+	0
+	All 3 Google Fonts load. DM Serif for headings, DM Mono for labels, Instrument Sans for body.
+	
+
+	4
+	1
+	Patient queue: 10 of 30 patients randomly selected per load. Refresh shows different lineup.
+	
+
+	5
+	1
+	Clicking a procedure: Steps 1 → 2 → 3 cascade. D8030 returns 3 products.
+	
+
+	6
+	1
+	Every patient procedure matches at least one product. No unmatched CDT codes in roster.
+	
+
+	7
+	2
+	Protocol card matches JSX: navy header, two-column body, teal product border.
+	
+
+	8
+	2
+	Multi-product: checkboxes on each card. Order All, Order Selected (N), disabled state all work.
+	
+
+	9
+	2
+	CTA click: trigger-btn hover, loading state, navy toast with teal border, slideUp animation.
+	
+
+	10
+	2
+	Full e2e: patient → procedure → Steps 1–4 → select subset → CTA → Steps 5–6 → toast.
+	
+
+	11
+	3
+	Sidebar: 320px, cream bg items, teal active, filter pills, search. Matches JSX.
+	
+
+	12
+	3
+	Mapping table: cream header, alternating rows, MonoTag CDTs, colored badges, ConfidenceBar.
+	
+
+	13
+	4
+	Analytics: 5 time frames (Today, 7d, 30d, 90d, YTD). Switching reloads all data.
+	
+
+	14
+	4
+	Protocol Activity chart: 15+ CDT codes, sortable by count / specialty / alphabetical.
+	
+
+	15
+	4
+	Revenue by Product: all 7 OrthoNu products with bars. Revenue by Specialty: all 7 specialties.
+	
+
+	16
+	4
+	Volume Trend chart: protocols over time for selected range.
+	
+
+	17
+	4
+	Live counter: completing a workflow increments KPI values on dashboard.
+	
+
+	18
+	All
+	No console errors. All hover states work. Scrollbars are 4px styled.
+	
+
+	19
+	All
+	Header matches: navy bg, teal logo square, tab switcher, API status pill.
+	
+
+	20
+	All
+	README: setup, run command, font deps, 30-patient roster, analytics seed data structure.
+	
+
+	
+
+9. Delivery
+9.1 Milestones
+1. Milestone 1 (Phase 0): Skeleton + header + fonts. 30s video. Review gate.
+2. Milestone 2 (Phases 1+2): Patient queue, mapping, product cards, procurement. 1-min video.
+3. Milestone 3 (Phases 3+4): Sidebar, table, analytics. Final 2–3 min demo.
+9.2 Timeline
+* Phase 0: 2–3 days. Phase 1: 3–4 days. Phase 2: 2–3 days. Phase 3: 1–2 days. Phase 4: 1–2 days. Polish: 1 day.
+Total: 10–15 working days.
+
+
+
+
+OrthoNu Clinical Intelligence Platform — POC Build Specification v5.0
