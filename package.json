@@ -12,10 +12,13 @@
     "seed": "tsx scripts/seed-protocols.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:sandbox": "tsx scripts/test-dentira-sandbox.ts"
+    "test:sandbox": "tsx scripts/test-dentira-sandbox.ts",
+    "epic:seed": "tsx scripts/seed-smartphrases.ts",
+    "epic:test-sandbox": "tsx scripts/test-epic-sandbox.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
+    "express-rate-limit": "^7.1.5",
     "express": "^4.19.2",
     "graphql": "^16.8.1",
     "graphql-request": "^6.1.0",

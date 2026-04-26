@@ -11,6 +11,7 @@ import protocolRoutes    from './api/routes/protocols.js';
 import prescriptionRoutes from './api/routes/prescriptions.js';
 import webhookRoutes     from './api/routes/webhooks.js';
 import healthRoutes      from './api/routes/health.js';
+import { epicRouter, registerEpicWorkers } from './epic/index.js';
 
 const app: Express = express();
 
@@ -29,6 +30,7 @@ app.use('/api/auth',           authRoutes);
 app.use('/api/protocols',      protocolRoutes);
 app.use('/api/prescriptions',  prescriptionRoutes);
 app.use('/webhooks',           webhookRoutes);
+app.use('/',                   epicRouter);  // mounts /.well-known/jwks.json, /cds-services/*
 
 app.use(errorHandler);
 
@@ -40,7 +42,8 @@ async function main() {
   }
   logger.info('PostgreSQL connection verified');
 
-  await startJobWorkers();
+  const boss = await startJobWorkers();
+  await registerEpicWorkers(boss);
 
   app.listen(config.PORT, () => {
     logger.info(
