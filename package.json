@@ -10,9 +10,11 @@
     "typecheck": "tsc --noEmit",
     "migrate": "tsx src/db/migrate.ts",
     "seed": "tsx scripts/seed-protocols.ts",
+    "seed:variants": "tsx scripts/seed-dentira-variants.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:sandbox": "tsx scripts/test-dentira-sandbox.ts"
+    "test:sandbox": "tsx scripts/test-dentira-sandbox.ts",
+    "test:dentira-prescription": "tsx scripts/test-prescription-flow.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

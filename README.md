@@ -63,13 +63,16 @@ Reads `OrthoNu_Clinical_Protocol_Master_Chart.xlsx` from the `context/` folder.
 Falls back to the POC's `cdt-mapping-schema.json` if the xlsx is unavailable.
 Seeds 7 products and up to 80 protocol rows. Idempotent — safe to re-run.
 
-**Important:** After Deepankar confirms real Dentira variantIds for each OrthoNu product, update `dentira_variant_map` rows:
+### 5a. Apply the Dentira variantId mapping
 
-```sql
-UPDATE dentira_variant_map
-SET dentira_variant_id = 'V-REAL-ID-HERE'
-WHERE orthonu_product_id = (SELECT id FROM orthonu_products WHERE sku = 'SKU-ON-1001');
+```bash
+pnpm seed:variants
 ```
+
+Wires the confirmed Dentira `variantId` (DN-ON-100X) and `productId` (ORTHO_*) values into
+`dentira_variant_map` for all 7 OrthoNu products (source: Deepankar, 2026-04-23).
+Idempotent — safe to re-run. Fails loudly if any product is missing from the DB (run
+`pnpm seed` first if needed).
 
 ### 6. Start the server
 
@@ -97,6 +100,17 @@ pnpm test:sandbox
 
 Hits the real Dentira sandbox, fetches a token, creates a test prescription with placeholder variantId `V20010`.
 
+### 9. Verify end-to-end prescription flow against sandbox
+
+```bash
+pnpm test:dentira-prescription
+```
+
+Fetches a sandbox token, calls `createTemplatePrescription` with real variantId `DN-ON-1004`
+(Chillin' Strips), logs the full response (prescription_id, qr_image_url, pdf_file_url),
+and persists the result to the `prescriptions` table. Reports SUCCESS or FAIL with the error
+message. Requires `DENTIRA_CLIENT_SECRET` and `DATABASE_URL` in `.env`.
+
 ---
 
 ## Project Structure
@@ -113,11 +127,13 @@ src/
     routes/      — Express route handlers (auth, protocols, prescriptions, webhooks, health)
     middleware/  — JWT auth guard, error handler
   jobs/          — pg-boss worker registration
-  lib/           — logger (pino), error types
+  lib/           — logger (pino), error types, dentira-procurement URL builder
 migrations/      — Numbered SQL files
 scripts/
-  seed-protocols.ts       — Reads xlsx, seeds DB
-  test-dentira-sandbox.ts — Integration test vs real sandbox
+  seed-protocols.ts         — Reads xlsx, seeds products + protocols
+  seed-dentira-variants.ts  — Applies confirmed Dentira variantId/productId mapping
+  test-dentira-sandbox.ts   — Basic sandbox token + prescription test
+  test-prescription-flow.ts — Full E2E test with real variantId, DB persist
 ```
 
 ---

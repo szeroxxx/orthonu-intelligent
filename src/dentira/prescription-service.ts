@@ -86,7 +86,6 @@ export async function createPrescription(
     doctorId,
     prescriptionProducts,
   });
-  console.log(rx, )
 
   // 4. Persist to prescriptions table
   await pool.query(
