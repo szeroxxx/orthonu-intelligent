@@ -15,7 +15,6 @@ export interface CreateTemplatePrescriptionInput {
   patientEmail: string;
   patientName: string;
   notes?: string;
-  doctorId?: string;
   prescriptionProducts: PrescriptionProductInput[];
 }
 

@@ -22,6 +22,7 @@ export interface ProtocolWithProduct {
     description: string | null;
   };
   dentira_variant_id: string | null;
+  dentira_product_id: string | null;
 }
 
 export async function getProtocolByCdt(cdtCode: string): Promise<ProtocolWithProduct[]> {
@@ -46,7 +47,8 @@ export async function getProtocolByCdt(cdtCode: string): Promise<ProtocolWithPro
          'category',       op.category,
          'description',    op.description
        ) AS product,
-       dvm.dentira_variant_id
+       dvm.dentira_variant_id,
+       dvm.dentira_product_id
      FROM protocols p
      JOIN orthonu_products op ON op.id = p.orthonu_product_id
      LEFT JOIN dentira_variant_map dvm ON dvm.orthonu_product_id = op.id
@@ -80,7 +82,8 @@ export async function listAllProtocols(): Promise<ProtocolWithProduct[]> {
          'category',       op.category,
          'description',    op.description
        ) AS product,
-       dvm.dentira_variant_id
+       dvm.dentira_variant_id,
+       dvm.dentira_product_id
      FROM protocols p
      JOIN orthonu_products op ON op.id = p.orthonu_product_id
      LEFT JOIN dentira_variant_map dvm ON dvm.orthonu_product_id = op.id

@@ -9,7 +9,6 @@ export interface CreatePrescriptionOptions {
   protocolIds?: number[];         // if caller already resolved protocol IDs
   patient: { name: string; email: string };
   notes?: string;
-  doctorId?: string;
 }
 
 export interface PrescriptionResult {
@@ -25,7 +24,7 @@ const DEFAULT_FREQ_CODE = '[FREQ_CODE:OD]';
 export async function createPrescription(
   opts: CreatePrescriptionOptions,
 ): Promise<PrescriptionResult> {
-  const { cdtCode, patient, notes, doctorId } = opts;
+  const { cdtCode, patient, notes } = opts;
 
   // 1. Resolve protocols → products → variants for this CDT code
   const { rows: protocolRows } = await pool.query<{
@@ -83,10 +82,8 @@ export async function createPrescription(
     patientEmail: patient.email,
     patientName: patient.name,
     notes: notes ?? `OrthoNu protocol for CDT ${cdtCode}`,
-    doctorId,
     prescriptionProducts,
   });
-  console.log(rx, )
 
   // 4. Persist to prescriptions table
   await pool.query(
