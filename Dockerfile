@@ -2,15 +2,14 @@ FROM node:24-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci --omit=dev
+COPY package.json ./
+RUN npm install
 
 COPY . .
-
-RUN mkdir -p public/uploads
+RUN npm run build
 
 ENV NODE_ENV=production
 
 EXPOSE 3500
 
-CMD ["node", "index.js"]
+CMD ["npm", "start"]
