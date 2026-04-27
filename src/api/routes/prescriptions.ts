@@ -14,7 +14,6 @@ const createSchema = z.object({
     email: z.string().email(),
   }),
   notes: z.string().optional(),
-  doctorId: z.string().optional(),
 });
 
 router.post('/', requireAuth, async (req, res, next) => {
@@ -57,7 +56,7 @@ router.get('/:id', requireAuth, async (req, res, next) => {
          ) AS order_info
        FROM prescriptions rx
        LEFT JOIN orders o ON o.prescription_id = rx.id
-       WHERE rx.id = $1 OR rx.dentira_prescription_id = $1
+       WHERE rx.id::text = $1 OR rx.dentira_prescription_id = $1
        LIMIT 1`,
       [id],
     );
