@@ -2,11 +2,21 @@ import { Pool } from 'pg';
 import { config } from '../config/index.js';
 import { logger } from '../lib/logger.js';
 
+// export const pool = new Pool({
+//   connectionString: config.DATABASE_URL,
+//   max: 10,
+//   idleTimeoutMillis: 30_000,
+//   connectionTimeoutMillis: 5_000,
+// });
+
 export const pool = new Pool({
   connectionString: config.DATABASE_URL,
   max: 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 pool.on('error', (err) => {
