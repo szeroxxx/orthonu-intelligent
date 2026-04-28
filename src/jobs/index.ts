@@ -6,7 +6,12 @@ import { processOrder, type ProcessOrderJobData } from '../dentira/order-process
 export let bossInstance: PgBoss;
 
 export async function startJobWorkers(): Promise<PgBoss> {
-  const boss = new PgBoss(config.DATABASE_URL);
+  const dbUrl = new URL(config.DATABASE_URL);
+  dbUrl.searchParams.delete('sslmode');
+  const boss = new PgBoss({
+    connectionString: dbUrl.toString(),
+    ssl: { rejectUnauthorized: false },
+  });
 
   boss.on('error', err => logger.error({ err }, 'pg-boss error'));
 
